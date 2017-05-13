@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{d786fe81-2fea-4dce-9a21-949bfef51172}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="program.cpp">
@@ -26,5 +29,35 @@
     <ClInclude Include="Randomization.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Data\_con.de.txt" />
+    <Text Include="Data\ads.de.txt" />
+    <Text Include="Data\alv.de.txt" />
+    <Text Include="Data\bas.de.txt" />
+    <Text Include="Data\bayn.de.txt" />
+    <Text Include="Data\bei.de.txt" />
+    <Text Include="Data\bmw.de.txt" />
+    <Text Include="Data\cbk.de.txt" />
+    <Text Include="Data\dai.de.txt" />
+    <Text Include="Data\dbk.de.txt" />
+    <Text Include="Data\dpw.de.txt" />
+    <Text Include="Data\dte.de.txt" />
+    <Text Include="Data\eoan.de.txt" />
+    <Text Include="Data\fme.de.txt" />
+    <Text Include="Data\fre.de.txt" />
+    <Text Include="Data\hei.de.txt" />
+    <Text Include="Data\hen3.de.txt" />
+    <Text Include="Data\ifx.de.txt" />
+    <Text Include="Data\lha.de.txt" />
+    <Text Include="Data\lin.de.txt" />
+    <Text Include="Data\mrk.de.txt" />
+    <Text Include="Data\muv2.de.txt" />
+    <Text Include="Data\psm.de.txt" />
+    <Text Include="Data\rwe.de.txt" />
+    <Text Include="Data\sap.de.txt" />
+    <Text Include="Data\sie.de.txt" />
+    <Text Include="Data\tka.de.txt" />
+    <Text Include="Data\vow3.de.txt" />
   </ItemGroup>
 </Project>
