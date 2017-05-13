@@ -3,6 +3,7 @@
 #include <string>
 #include <stdint.h>
 #include <vector>
+#include "Calculation.h"
 
 using namespace std;
 
@@ -58,5 +59,65 @@ struct StockDataVector
 		delete this->Data;
 
 		this->Data = NULL;
+	}
+};
+
+struct SimpleNeuralNetwork
+{
+	size_t Predictors, HiddenUnits, OutputUnits;
+	float *InputToHiddenWeights;
+	float *HiddenToOutputWeights;
+	float *HiddenBiasWeights;
+	float *OutputBiasWeights;
+
+	SimpleNeuralNetwork(size_t predictors, size_t hiddenUnits, size_t outputUnits)
+	{
+		this->Predictors = predictors;
+		this->HiddenUnits = hiddenUnits;
+		this->OutputUnits = outputUnits;
+		this->InputToHiddenWeights = new float[predictors * hiddenUnits];
+		this->HiddenToOutputWeights = new float[hiddenUnits * outputUnits];
+		this->HiddenBiasWeights = new float[hiddenUnits];
+		this->OutputBiasWeights = new float[outputUnits];
+	}
+
+	float* CreateHiddenResultSet() {
+		return new float[this->HiddenUnits];
+	}
+
+	float* CreateOutputResultSet() {
+		return new float[this->OutputUnits];
+	}
+
+	void CalculateRaw(float *inputs, float *hiddenResults, float *outputResults)
+	{
+		float result;
+		size_t startIndex;
+
+		for (size_t hiddenNeuron = 0; hiddenNeuron < this->HiddenUnits; hiddenNeuron++)
+		{
+			result = this->HiddenBiasWeights[hiddenNeuron];
+			startIndex = hiddenNeuron * this->Predictors;
+
+			for (size_t i = 0; i < this->Predictors; i++)
+			{
+				result += inputs[i] * this->InputToHiddenWeights[startIndex + i];
+			}
+
+			hiddenResults[hiddenNeuron] = result;
+		}
+
+		for (size_t outputNeuron = 0; outputNeuron < this->OutputUnits; outputNeuron++)
+		{
+			result = this->OutputBiasWeights[outputNeuron];
+			startIndex = outputNeuron * this->HiddenUnits;
+
+			for (size_t i = 0; i < this->HiddenUnits; i++)
+			{
+				result += hiddenResults[i] * this->HiddenToOutputWeights[startIndex + i];
+			}
+
+			outputResults[outputNeuron] = result;
+		}
 	}
 };

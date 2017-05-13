@@ -32,6 +32,9 @@
     <ClInclude Include="IO.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="Calculation.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Data\_con.de.txt" />

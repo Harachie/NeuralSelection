@@ -142,6 +142,7 @@
     <ClCompile Include="program.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Calculation.h" />
     <ClInclude Include="IO.h" />
     <ClInclude Include="Randomization.h" />
     <ClInclude Include="Structures.h" />
