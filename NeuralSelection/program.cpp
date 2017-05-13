@@ -94,6 +94,12 @@ void TestNetwork2()
 	delete[] outputResults;
 }
 
+void TestNetwork3() 
+{
+	SimpleNeuralNetwork network(13, 3, 1);
+	float *inputs, *hiddenResults, *outputResults;
+}
+
 int main(int argc, char* argv[]) {
 	string executablePath = argv[0];
 	string directory = executablePath.substr(0, executablePath.length() - 19); //-neuralselection.exe
@@ -106,6 +112,7 @@ int main(int argc, char* argv[]) {
 	StockDataVector *v;
 
 	v = ReadStockFile(dataDirectory + stockDataFiles[0]);
+	auto k = v->ExtractSteps(5, 13);
 
 	return 0;
 }

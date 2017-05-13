@@ -38,6 +38,38 @@ struct StockData
 	}
 };
 
+struct StockDataExtraction
+{
+	StockData *BuyBar;
+	vector<StockData> *UsedStockData;
+	vector<float> *Predictors;
+
+	StockDataExtraction(StockData *buyBar)
+	{
+		this->BuyBar = buyBar;
+		this->UsedStockData = new vector<StockData>();
+		this->Predictors = new vector<float>();
+	}
+
+	StockDataExtraction(StockData *buyBar, vector<StockData> *usedStockData, vector<float> *predictors)
+	{
+		this->BuyBar = buyBar;
+		this->UsedStockData = usedStockData;
+		this->Predictors = predictors;
+	}
+
+};
+
+struct StockDataExtractionVector
+{
+	vector<StockDataExtraction> *Extractions;
+
+	StockDataExtractionVector()
+	{
+		this->Extractions = new vector<StockDataExtraction>();
+	}
+};
+
 struct StockDataVector
 {
 	string Description;
@@ -51,11 +83,42 @@ struct StockDataVector
 	StockDataVector(vector<StockData> *v)
 	{
 		this->Data = v;
-	
+
+	}
+
+	StockDataExtractionVector* ExtractSteps(size_t stepSize, size_t count)
+	{
+		size_t startIndex;
+		StockDataExtractionVector *r = new StockDataExtractionVector();
+		StockDataExtraction *e;
+		float percent;
+
+		startIndex = stepSize * count + 1;
+
+		for (size_t i = startIndex; i < this->Data->size(); i++)
+		{
+
+			e = new StockDataExtraction(&this->Data->at(i));
+
+			for (size_t stepIndex = i - startIndex; stepIndex < i; stepIndex += stepSize)
+			{
+				e->UsedStockData->push_back(this->Data->at(stepIndex));
+			}
+
+			for (size_t p = 0; p < count; p++)
+			{
+				percent = e->UsedStockData->at(p + 1).Close / e->UsedStockData->at(p).Close;
+				e->Predictors->push_back(percent);
+			}
+
+			r->Extractions->push_back(*e);
+		}
+
+		return r;
 	}
 
 	~StockDataVector()
-	{		
+	{
 		delete this->Data;
 
 		this->Data = NULL;
@@ -79,6 +142,41 @@ struct SimpleNeuralNetwork
 		this->HiddenToOutputWeights = new float[hiddenUnits * outputUnits];
 		this->HiddenBiasWeights = new float[hiddenUnits];
 		this->OutputBiasWeights = new float[outputUnits];
+	}
+
+	size_t GetTotalWeightsCount()
+	{
+		return this->Predictors * this->HiddenUnits + this->HiddenUnits * this->OutputUnits + this->HiddenUnits + this->OutputUnits;
+	}
+
+	void SetNetworkWeights(const float *weights)
+	{
+		size_t index;
+		size_t max;
+
+		max = this->Predictors * this->HiddenUnits;
+
+		for (size_t i = 0; i < max; i++)
+		{
+			this->InputToHiddenWeights[i] = weights[index++];
+		}
+
+		max = this->HiddenUnits * this->OutputUnits;
+
+		for (size_t i = 0; i < max; i++)
+		{
+			this->HiddenToOutputWeights[i] = weights[index++];
+		}
+
+		for (size_t i = 0; i < this->HiddenUnits; i++)
+		{
+			this->HiddenBiasWeights[i] = weights[index++];
+		}
+
+		for (size_t i = 0; i < max; i++)
+		{
+			this->OutputBiasWeights[i] = weights[index++];
+		}
 	}
 
 	float* CreateHiddenResultSet() {
@@ -118,6 +216,38 @@ struct SimpleNeuralNetwork
 			}
 
 			outputResults[outputNeuron] = result;
+		}
+	}
+
+	void CalculateSigmoid(float *inputs, float *hiddenResults, float *outputResults)
+	{
+		float result;
+		size_t startIndex;
+
+		for (size_t hiddenNeuron = 0; hiddenNeuron < this->HiddenUnits; hiddenNeuron++)
+		{
+			result = this->HiddenBiasWeights[hiddenNeuron];
+			startIndex = hiddenNeuron * this->Predictors;
+
+			for (size_t i = 0; i < this->Predictors; i++)
+			{
+				result += inputs[i] * this->InputToHiddenWeights[startIndex + i];
+			}
+
+			hiddenResults[hiddenNeuron] = sigmoid(result);
+		}
+
+		for (size_t outputNeuron = 0; outputNeuron < this->OutputUnits; outputNeuron++)
+		{
+			result = this->OutputBiasWeights[outputNeuron];
+			startIndex = outputNeuron * this->HiddenUnits;
+
+			for (size_t i = 0; i < this->HiddenUnits; i++)
+			{
+				result += hiddenResults[i] * this->HiddenToOutputWeights[startIndex + i];
+			}
+
+			outputResults[outputNeuron] = sigmoid(result);
 		}
 	}
 };
