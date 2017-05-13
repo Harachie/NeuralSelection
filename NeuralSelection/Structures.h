@@ -1,6 +1,10 @@
 #pragma once
 
+#include <string>
 #include <stdint.h>
+#include <vector>
+
+using namespace std;
 
 union FastFloat
 {
@@ -30,5 +34,29 @@ struct StockData
 		this->Close = close;
 		this->Volume = volume;
 		this->AveragePrice = (this->High + this->Low) / 2.0f;
+	}
+};
+
+struct StockDataVector
+{
+	string Description;
+	vector<StockData> *Data;
+
+	StockDataVector()
+	{
+		this->Data = new vector<StockData>();
+	}
+
+	StockDataVector(vector<StockData> *v)
+	{
+		this->Data = v;
+	
+	}
+
+	~StockDataVector()
+	{		
+		delete this->Data;
+
+		this->Data = NULL;
 	}
 };

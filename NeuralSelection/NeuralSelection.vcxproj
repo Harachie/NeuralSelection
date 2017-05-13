@@ -142,6 +142,7 @@
     <ClCompile Include="program.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IO.h" />
     <ClInclude Include="Randomization.h" />
     <ClInclude Include="Structures.h" />
   </ItemGroup>
@@ -178,88 +179,88 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Data\_con.de.txt" >
+    <Content Include="Data\_con.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\ads.de.txt" >
+    <Content Include="Data\ads.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\alv.de.txt" >
+    <Content Include="Data\alv.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\bas.de.txt" >
+    <Content Include="Data\bas.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\bayn.de.txt" >
+    <Content Include="Data\bayn.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\bei.de.txt" >
+    <Content Include="Data\bei.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\bmw.de.txt" >
+    <Content Include="Data\bmw.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\cbk.de.txt" >
+    <Content Include="Data\cbk.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\dai.de.txt" >
+    <Content Include="Data\dai.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\dbk.de.txt" >
+    <Content Include="Data\dbk.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\dpw.de.txt" >
+    <Content Include="Data\dpw.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\dte.de.txt" >
+    <Content Include="Data\dte.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\eoan.de.txt" >
+    <Content Include="Data\eoan.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\fme.de.txt" >
+    <Content Include="Data\fme.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\fre.de.txt" >
+    <Content Include="Data\fre.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\hei.de.txt" >
+    <Content Include="Data\hei.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\hen3.de.txt" >
+    <Content Include="Data\hen3.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\ifx.de.txt" >
+    <Content Include="Data\ifx.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\lha.de.txt" >
+    <Content Include="Data\lha.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\lin.de.txt" >
+    <Content Include="Data\lin.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\mrk.de.txt" >
+    <Content Include="Data\mrk.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\muv2.de.txt" >
+    <Content Include="Data\muv2.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\psm.de.txt" >
+    <Content Include="Data\psm.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\rwe.de.txt" >
+    <Content Include="Data\rwe.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\sap.de.txt" >
+    <Content Include="Data\sap.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\sie.de.txt" >
+    <Content Include="Data\sie.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\tka.de.txt" >
+    <Content Include="Data\tka.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="Data\vow3.de.txt" >
+    <Content Include="Data\vow3.de.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
