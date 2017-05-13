@@ -51,11 +51,14 @@ struct StockDataExtraction
 		this->Predictors = new vector<float>();
 	}
 
-	StockDataExtraction(StockData *buyBar, vector<StockData> *usedStockData, vector<float> *predictors)
+	~StockDataExtraction()
 	{
-		this->BuyBar = buyBar;
-		this->UsedStockData = usedStockData;
-		this->Predictors = predictors;
+		delete this->UsedStockData;
+		delete this->Predictors;
+
+		this->BuyBar = NULL;
+		this->UsedStockData = NULL;
+		this->Predictors = NULL;
 	}
 
 };
@@ -67,6 +70,13 @@ struct StockDataExtractionVector
 	StockDataExtractionVector()
 	{
 		this->Extractions = new vector<StockDataExtraction>();
+	}
+
+	~StockDataExtractionVector()
+	{
+		delete this->Extractions;
+
+		this->Extractions = NULL;
 	}
 };
 
