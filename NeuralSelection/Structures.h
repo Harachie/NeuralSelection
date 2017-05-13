@@ -52,15 +52,18 @@ struct StockDataExtraction
 		this->Predictors = new vector<float>();
 	}
 
-	~StockDataExtraction()
+	/*~StockDataExtraction()
 	{
+		this->UsedStockData->clear();
+		this->Predictors->clear();
+
 		delete this->UsedStockData;
 		delete this->Predictors;
 
 		this->BuyBar = NULL;
 		this->UsedStockData = NULL;
 		this->Predictors = NULL;
-	}
+	}*/
 
 };
 
@@ -108,8 +111,7 @@ struct StockDataVector
 
 		return r;
 	}
-
-
+	
 	StockDataVector* FilterByDate(unordered_set<uint32_t> *dates, uint32_t minDate)
 	{
 		StockDataVector *r = new StockDataVector();
@@ -126,6 +128,7 @@ struct StockDataVector
 
 		return r;
 	}
+
 	StockDataVector* FilterByDate(unordered_set<uint32_t> *dates)
 	{
 		StockDataVector *r = new StockDataVector();
@@ -168,10 +171,13 @@ struct StockDataVector
 		float percent;
 
 		startIndex = stepSize * count + 1;
+		r->Extractions->reserve(this->Data->size() - startIndex);
 
 		for (size_t i = startIndex; i < this->Data->size(); i++)
 		{
 			e = new StockDataExtraction(&this->Data->at(i));
+			e->UsedStockData->reserve(count + 1);
+			e->Predictors->reserve(count + 1);
 
 			for (size_t stepIndex = i - startIndex; stepIndex < i; stepIndex += stepSize)
 			{
@@ -224,7 +230,7 @@ struct SimpleNeuralNetwork
 
 	void SetNetworkWeights(const float *weights)
 	{
-		size_t index;
+		size_t index = 0;
 		size_t max;
 
 		max = this->Predictors * this->HiddenUnits;
