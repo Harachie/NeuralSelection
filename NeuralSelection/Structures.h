@@ -3,6 +3,7 @@
 #include <string>
 #include <stdint.h>
 #include <vector>
+#include <unordered_set>
 #include "Calculation.h"
 
 using namespace std;
@@ -96,18 +97,80 @@ struct StockDataVector
 
 	}
 
+	unordered_set<uint32_t> *ExtractDates()
+	{
+		unordered_set<uint32_t> *r = new unordered_set<uint32_t>();
+
+		for (size_t i = 0; i < this->Data->size(); i++)
+		{
+			r->insert(this->Data->at(i).Date);
+		}
+
+		return r;
+	}
+
+
+	StockDataVector* FilterByDate(unordered_set<uint32_t> *dates, uint32_t minDate)
+	{
+		StockDataVector *r = new StockDataVector();
+
+		r->Description = this->Description;
+
+		for (size_t i = 0; i < this->Data->size(); i++)
+		{
+			if ((dates->count(this->Data->at(i).Date)) && (this->Data->at(i).Date >= minDate))
+			{
+				r->Data->push_back(this->Data->at(i));
+			}
+		}
+
+		return r;
+	}
+	StockDataVector* FilterByDate(unordered_set<uint32_t> *dates)
+	{
+		StockDataVector *r = new StockDataVector();
+
+		r->Description = this->Description;
+
+		for (size_t i = 0; i < this->Data->size(); i++)
+		{
+			if (dates->count(this->Data->at(i).Date))
+			{
+				r->Data->push_back(this->Data->at(i));
+			}
+		}
+
+		return r;
+	}
+
+	StockDataVector* FilterByDate(uint32_t date)
+	{
+		StockDataVector *r = new StockDataVector();
+
+		r->Description = this->Description;
+
+		for (size_t i = 0; i < this->Data->size(); i++)
+		{
+			if (this->Data->at(i).Date >= date)
+			{
+				r->Data->push_back(this->Data->at(i));
+			}
+		}
+
+		return r;
+	}
+
 	StockDataExtractionVector* ExtractSteps(size_t stepSize, size_t count)
 	{
-		size_t startIndex;
 		StockDataExtractionVector *r = new StockDataExtractionVector();
 		StockDataExtraction *e;
+		size_t startIndex;
 		float percent;
 
 		startIndex = stepSize * count + 1;
 
 		for (size_t i = startIndex; i < this->Data->size(); i++)
 		{
-
 			e = new StockDataExtraction(&this->Data->at(i));
 
 			for (size_t stepIndex = i - startIndex; stepIndex < i; stepIndex += stepSize)

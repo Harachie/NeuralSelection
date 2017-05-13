@@ -100,6 +100,36 @@ void TestNetwork3()
 	float *inputs, *hiddenResults, *outputResults;
 }
 
+void Cars(string dataDirectory)
+{
+	StockDataVector *vow, *dai, *bmw;
+	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered;
+	unordered_set<uint32_t> *vowDates, *daiDates, *bmwDates, *validDates;
+
+	validDates = new unordered_set<uint32_t>();
+	vow = ReadStockFile(dataDirectory + string("vow3.de.txt"));
+	dai = ReadStockFile(dataDirectory + string("dai.de.txt"));
+	bmw = ReadStockFile(dataDirectory + string("bmw.de.txt"));
+
+	vowDates = vow->ExtractDates();
+	daiDates = dai->ExtractDates();
+	bmwDates = bmw->ExtractDates();
+		
+	for (auto element = vowDates->begin(); element != vowDates->end(); ++element)
+	{
+		if (daiDates->count(*element) && bmwDates->count(*element))
+		{
+			validDates->insert(*element);
+		}
+	}
+
+	vowFiltered = vow->FilterByDate(validDates, 20000101);
+	daiFiltered = dai->FilterByDate(validDates, 20000101);
+	bmwFiltered = bmw->FilterByDate(validDates, 20000101);
+
+
+}
+
 int main(int argc, char* argv[]) {
 	string executablePath = argv[0];
 	string directory = executablePath.substr(0, executablePath.length() - 19); //-neuralselection.exe
@@ -108,6 +138,7 @@ int main(int argc, char* argv[]) {
 	
 	TestNetwork1();
 	TestNetwork2();
+	Cars(dataDirectory);
 
 	StockDataVector *v;
 
