@@ -9,6 +9,29 @@
 
 using namespace std;
 
+void TestSoftmax()
+{
+	float *values = new float[7];
+	float *result;
+	float softmaxSum;
+
+	values[0] = 1.0f;
+	values[1] = 2.0f;
+	values[2] = 3.0f;
+	values[3] = 4.0f;
+	values[4] = 1.0f;
+	values[5] = 2.0f;
+	values[6] = 3.0f;
+
+	result = softmax(values, 7, 1);
+	softmaxSum = sum(result, 7);
+
+	assert(softmaxSum == 1.0f);
+
+	delete[] values;
+	delete[] result;
+}
+
 void TestNetwork1()
 {
 	SimpleNeuralNetwork network(1, 3, 2);
@@ -103,13 +126,18 @@ void TestNetwork3()
 
 void Cars(string dataDirectory)
 {
+	size_t predictorsCount = 2;
+	size_t stepSize = 65;
+	uint32_t startDate = 20100101;
+
 	StockDataVector *vow, *dai, *bmw;
 	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered;
 	StockDataExtractionVector *vowSteps, *daiSteps, *bmwSteps;
 	unordered_set<uint32_t> *vowDates, *daiDates, *bmwDates, *validDates;
-	SimpleNeuralNetwork network(13, 3, 1);
+	SimpleNeuralNetwork network(predictorsCount, 5, 1);
 	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
-	float *results;
+	float *results, *softmaxResults;
+	size_t predictorCount, index;
 	Xor1024 xor;
 	
 	initializeXor1024(xor);
@@ -117,7 +145,7 @@ void Cars(string dataDirectory)
 	hiddenResults = network.CreateHiddenResultSet();
 	outputResults = network.CreateOutputResultSet();
 	randoms = new float[network.GetTotalWeightsCount()];
-	generateRandoms(xor, randoms, network.GetTotalWeightsCount(), -1.0f, 1.0f);
+	generateRandoms(xor, randoms, network.GetTotalWeightsCount(), -5.0f, 5.0f);
 	network.SetNetworkWeights(randoms);
 
 	validDates = new unordered_set<uint32_t>();
@@ -137,23 +165,36 @@ void Cars(string dataDirectory)
 		}
 	}
 
-	vowFiltered = vow->FilterByDate(validDates, 20000101);
-	daiFiltered = dai->FilterByDate(validDates, 20000101);
-	bmwFiltered = bmw->FilterByDate(validDates, 20000101);
+	vowFiltered = vow->FilterByDate(validDates, startDate);
+	daiFiltered = dai->FilterByDate(validDates, startDate);
+	bmwFiltered = bmw->FilterByDate(validDates, startDate);
 
-	vowSteps = vowFiltered->ExtractSteps(5, 13);
-	daiSteps = daiFiltered->ExtractSteps(5, 13);
-	bmwSteps = bmwFiltered->ExtractSteps(5, 13);
+	vowSteps = vowFiltered->ExtractSteps(stepSize, predictorsCount);
+	daiSteps = daiFiltered->ExtractSteps(stepSize, predictorsCount);
+	bmwSteps = bmwFiltered->ExtractSteps(stepSize, predictorsCount);
 
-	results = new float[vowSteps->Extractions.size() * 3];
+	predictorCount = vowSteps->Extractions.size();
+	results = new float[predictorCount * 3];
+	softmaxResults = new float[predictorCount * 3];
 
-	//todo calc all outputs for 3 car sets etc
-	for (size_t i = 0; i < vowSteps->Extractions.size(); i++)
+	for (size_t i = 0, index = 0; i < predictorCount * 3; i += 3, index++)
 	{
-		predictors = &vowSteps->Extractions.at(i).Predictors.at(0);
+		predictors = &vowSteps->Extractions.at(index).Predictors.at(0);
 		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
 		results[i] = outputResults[0];
+
+		predictors = &daiSteps->Extractions.at(index).Predictors.at(0);
+		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
+		results[i + 1] = outputResults[0];
+
+		predictors = &bmwSteps->Extractions.at(index).Predictors.at(0);
+		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
+		results[i + 2] = outputResults[0];
 	}
+
+	softmax(softmaxResults, results, 3, predictorCount);
+
+
 
 }
 
@@ -163,15 +204,10 @@ int main(int argc, char* argv[]) {
 	string dataDirectory = directory + string("Data\\");
 	vector<string> stockDataFiles = { "ads.de.txt", "alv.de.txt", "bas.de.txt", "bayn.de.txt", "bei.de.txt", "bmw.de.txt", "cbk.de.txt", "dai.de.txt", "dbk.de.txt", "dpw.de.txt", "dte.de.txt", "eoan.de.txt", "fme.de.txt", "fre.de.txt", "hei.de.txt", "hen3.de.txt", "ifx.de.txt", "lha.de.txt", "lin.de.txt", "mrk.de.txt", "muv2.de.txt", "psm.de.txt", "rwe.de.txt", "sap.de.txt", "sie.de.txt", "tka.de.txt", "vow3.de.txt", "_con.de.txt" };
 
-
-	StockDataVector *v;
-	v = ReadStockFile(dataDirectory + stockDataFiles[0]);
-	auto k = v->ExtractSteps(5, 13);
-
+	TestSoftmax();
 	TestNetwork1();
 	TestNetwork2();
 	Cars(dataDirectory);
-
 
 	return 0;
 }

@@ -141,6 +141,7 @@ struct StockDataVector
 		StockDataExtractionVector *r = new StockDataExtractionVector();
 		StockDataExtraction *e;
 		size_t startIndex;
+		StockData *currentBar;
 		float percent = 0.0f;
 
 		startIndex = stepSize * count + 1;
@@ -157,9 +158,11 @@ struct StockDataVector
 				e->UsedStockData.push_back(this->Data[0][stepIndex]);
 			}
 
+			currentBar = &e->UsedStockData.at(count);
+
 			for (size_t p = 0; p < count; p++)
 			{
-				percent = e->UsedStockData.at(p + 1).Close / e->UsedStockData.at(p).Close;
+				percent = currentBar->Close / e->UsedStockData.at(p).Close;
 				e->Predictors.push_back(percent);
 			}
 
