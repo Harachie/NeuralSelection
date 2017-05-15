@@ -111,7 +111,7 @@ void Cars(string dataDirectory)
 	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
 	float *results;
 	Xor1024 xor;
-
+	
 	initializeXor1024(xor);
 
 	hiddenResults = network.CreateHiddenResultSet();
@@ -145,12 +145,12 @@ void Cars(string dataDirectory)
 	daiSteps = daiFiltered->ExtractSteps(5, 13);
 	bmwSteps = bmwFiltered->ExtractSteps(5, 13);
 
-	results = new float[vowSteps->Extractions->size() * 3];
+	results = new float[vowSteps->Extractions.size() * 3];
 
 	//todo calc all outputs for 3 car sets etc
-	for (size_t i = 0; i < vowSteps->Extractions->size(); i++)
+	for (size_t i = 0; i < vowSteps->Extractions.size(); i++)
 	{
-		predictors = &vowSteps->Extractions->at(i).Predictors->at(0);
+		predictors = &vowSteps->Extractions.at(i).Predictors.at(0);
 		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
 		results[i] = outputResults[0];
 	}
@@ -164,14 +164,14 @@ int main(int argc, char* argv[]) {
 	vector<string> stockDataFiles = { "ads.de.txt", "alv.de.txt", "bas.de.txt", "bayn.de.txt", "bei.de.txt", "bmw.de.txt", "cbk.de.txt", "dai.de.txt", "dbk.de.txt", "dpw.de.txt", "dte.de.txt", "eoan.de.txt", "fme.de.txt", "fre.de.txt", "hei.de.txt", "hen3.de.txt", "ifx.de.txt", "lha.de.txt", "lin.de.txt", "mrk.de.txt", "muv2.de.txt", "psm.de.txt", "rwe.de.txt", "sap.de.txt", "sie.de.txt", "tka.de.txt", "vow3.de.txt", "_con.de.txt" };
 
 
+	StockDataVector *v;
+	v = ReadStockFile(dataDirectory + stockDataFiles[0]);
+	auto k = v->ExtractSteps(5, 13);
+
 	TestNetwork1();
 	TestNetwork2();
 	Cars(dataDirectory);
 
 
-
-	StockDataVector *v;
-	v = ReadStockFile(dataDirectory + stockDataFiles[0]);
-	auto k = v->ExtractSteps(5, 13);
 	return 0;
 }

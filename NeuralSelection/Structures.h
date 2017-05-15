@@ -41,47 +41,20 @@ struct StockData
 
 struct StockDataExtraction
 {
-	StockData *BuyBar;
-	vector<StockData> *UsedStockData;
-	vector<float> *Predictors;
+	StockData BuyBar;
+	vector<StockData> UsedStockData;
+	vector<float> Predictors;
 
-	StockDataExtraction(StockData *buyBar)
+	StockDataExtraction(const StockData &buyBar)
 	{
 		this->BuyBar = buyBar;
-		this->UsedStockData = new vector<StockData>();
-		this->Predictors = new vector<float>();
 	}
-
-	/*~StockDataExtraction()
-	{
-		this->UsedStockData->clear();
-		this->Predictors->clear();
-
-		delete this->UsedStockData;
-		delete this->Predictors;
-
-		this->BuyBar = NULL;
-		this->UsedStockData = NULL;
-		this->Predictors = NULL;
-	}*/
 
 };
 
 struct StockDataExtractionVector
 {
-	vector<StockDataExtraction> *Extractions;
-
-	StockDataExtractionVector()
-	{
-		this->Extractions = new vector<StockDataExtraction>();
-	}
-
-	~StockDataExtractionVector()
-	{
-		delete this->Extractions;
-
-		this->Extractions = NULL;
-	}
+	vector<StockDataExtraction> Extractions;
 };
 
 struct StockDataVector
@@ -168,29 +141,29 @@ struct StockDataVector
 		StockDataExtractionVector *r = new StockDataExtractionVector();
 		StockDataExtraction *e;
 		size_t startIndex;
-		float percent;
+		float percent = 0.0f;
 
 		startIndex = stepSize * count + 1;
-		r->Extractions->reserve(this->Data->size() - startIndex);
+		r->Extractions.reserve(this->Data->size() - startIndex);
 
 		for (size_t i = startIndex; i < this->Data->size(); i++)
 		{
-			e = new StockDataExtraction(&this->Data->at(i));
-			e->UsedStockData->reserve(count + 1);
-			e->Predictors->reserve(count + 1);
+			e = new StockDataExtraction(this->Data->at(i));			
+			e->UsedStockData.reserve(count + 1);
+			e->Predictors.reserve(count + 1);
 
 			for (size_t stepIndex = i - startIndex; stepIndex < i; stepIndex += stepSize)
 			{
-				e->UsedStockData->push_back(this->Data->at(stepIndex));
+				e->UsedStockData.push_back(this->Data[0][stepIndex]);
 			}
 
 			for (size_t p = 0; p < count; p++)
 			{
-				percent = e->UsedStockData->at(p + 1).Close / e->UsedStockData->at(p).Close;
-				e->Predictors->push_back(percent);
+				percent = e->UsedStockData.at(p + 1).Close / e->UsedStockData.at(p).Close;
+				e->Predictors.push_back(percent);
 			}
 
-			r->Extractions->push_back(*e);
+			r->Extractions.push_back(*e);
 		}
 
 		return r;
