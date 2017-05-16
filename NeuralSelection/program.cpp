@@ -6,6 +6,7 @@
 #include <assert.h>
 #include "IO.h"
 #include "Randomization.h"
+#include <algorithm>
 
 using namespace std;
 
@@ -124,16 +125,67 @@ void TestNetwork3()
 	float *inputs, *hiddenResults, *outputResults;
 }
 
+unordered_set<uint32_t>* GetValidDates(const vector<StockDataVector*> &dataVectors)
+{
+	unordered_set<uint32_t>	*validDates = new unordered_set<uint32_t>();
+	unordered_set<uint32_t> *dateSet;
+	vector<unordered_set<uint32_t>> dateSets;
+	size_t count = 0;
+	size_t maxSetIndex;
+	int canAdd;
+	
+	for (size_t i = 0; i < dataVectors.size(); i++)
+	{
+		dateSet = dataVectors.at(i)->ExtractDates();
+		dateSets.push_back(*dateSet);
+
+		if (dateSet->size() > count)
+		{
+			count = dateSet->size();
+			maxSetIndex = i;
+		}
+	}
+
+	dateSet = &dateSets.at(maxSetIndex);
+
+	for (auto element = dateSet->begin(); element != dateSet->end(); ++element)
+	{
+		canAdd = 1;
+
+		for (size_t i = 0; i < dataVectors.size(); i++)
+		{
+			if (i != maxSetIndex) //sollte nicht das set sein, welches wir eh iterieren
+			{
+				if (!dateSets.at(i).count(*element))
+				{
+					canAdd = 0;
+
+					break;
+				}
+			}
+		}
+
+		if (canAdd)
+		{
+			validDates->insert(*element);
+		}
+	}
+
+	return validDates;
+}
+
 void Cars(string dataDirectory)
 {
 	size_t predictorsCount = 2;
 	size_t stepSize = 65;
 	uint32_t startDate = 20100101;
 
+	vector<StockDataVector*> dataVectors;
+
 	StockDataVector *vow, *dai, *bmw;
 	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered;
 	StockDataExtractionVector *vowSteps, *daiSteps, *bmwSteps;
-	unordered_set<uint32_t> *vowDates, *daiDates, *bmwDates, *validDates;
+	unordered_set<uint32_t> *validDates;
 	SimpleNeuralNetwork network(predictorsCount, 5, 1);
 	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
 	float *results, *softmaxResults;
@@ -141,7 +193,6 @@ void Cars(string dataDirectory)
 	Xor1024 xor;
 	
 	initializeXor1024(xor);
-
 	hiddenResults = network.CreateHiddenResultSet();
 	outputResults = network.CreateOutputResultSet();
 	randoms = new float[network.GetTotalWeightsCount()];
@@ -153,17 +204,11 @@ void Cars(string dataDirectory)
 	dai = ReadStockFile(dataDirectory + string("dai.de.txt"));
 	bmw = ReadStockFile(dataDirectory + string("bmw.de.txt"));
 
-	vowDates = vow->ExtractDates();
-	daiDates = dai->ExtractDates();
-	bmwDates = bmw->ExtractDates();
+	dataVectors.push_back(vow);
+	dataVectors.push_back(dai);
+	dataVectors.push_back(bmw);
 
-	for (auto element = vowDates->begin(); element != vowDates->end(); ++element)
-	{
-		if (daiDates->count(*element) && bmwDates->count(*element))
-		{
-			validDates->insert(*element);
-		}
-	}
+	validDates = GetValidDates(dataVectors);
 
 	vowFiltered = vow->FilterByDate(validDates, startDate);
 	daiFiltered = dai->FilterByDate(validDates, startDate);
@@ -197,6 +242,8 @@ void Cars(string dataDirectory)
 
 
 }
+
+
 
 int main(int argc, char* argv[]) {
 	string executablePath = argv[0];
