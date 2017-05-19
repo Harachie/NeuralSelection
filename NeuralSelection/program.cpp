@@ -125,7 +125,7 @@ void TestNetwork3()
 	float *inputs, *hiddenResults, *outputResults;
 }
 
-unordered_set<uint32_t>* GetValidDates(const vector<StockDataVector*> &dataVectors)
+unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 {
 	unordered_set<uint32_t>	*validDates = new unordered_set<uint32_t>();
 	unordered_set<uint32_t> *dateSet;
@@ -133,10 +133,10 @@ unordered_set<uint32_t>* GetValidDates(const vector<StockDataVector*> &dataVecto
 	size_t count = 0;
 	size_t maxSetIndex;
 	int canAdd;
-	
+
 	for (size_t i = 0; i < dataVectors.size(); i++)
 	{
-		dateSet = dataVectors.at(i)->ExtractDates();
+		dateSet = dataVectors.at(i).ExtractDates();
 		dateSets.push_back(*dateSet);
 
 		if (dateSet->size() > count)
@@ -180,7 +180,8 @@ void Cars(string dataDirectory)
 	size_t stepSize = 65;
 	uint32_t startDate = 20100101;
 
-	vector<StockDataVector*> dataVectors;
+	vector<StockDataVector> dataVectors;
+	vector<StockDataExtractionVector> extractionVectors;
 
 	StockDataVector *vow, *dai, *bmw;
 	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered;
@@ -189,9 +190,9 @@ void Cars(string dataDirectory)
 	SimpleNeuralNetwork network(predictorsCount, 5, 1);
 	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
 	float *results, *softmaxResults;
-	size_t predictorCount, index;
+	size_t dataCount, index, outputSetsCount;
 	Xor1024 xor;
-	
+
 	initializeXor1024(xor);
 	hiddenResults = network.CreateHiddenResultSet();
 	outputResults = network.CreateOutputResultSet();
@@ -204,9 +205,9 @@ void Cars(string dataDirectory)
 	dai = ReadStockFile(dataDirectory + string("dai.de.txt"));
 	bmw = ReadStockFile(dataDirectory + string("bmw.de.txt"));
 
-	dataVectors.push_back(vow);
-	dataVectors.push_back(dai);
-	dataVectors.push_back(bmw);
+	dataVectors.push_back(*vow);
+	dataVectors.push_back(*dai);
+	dataVectors.push_back(*bmw);
 
 	validDates = GetValidDates(dataVectors);
 
@@ -218,29 +219,31 @@ void Cars(string dataDirectory)
 	daiSteps = daiFiltered->ExtractSteps(stepSize, predictorsCount);
 	bmwSteps = bmwFiltered->ExtractSteps(stepSize, predictorsCount);
 
-	predictorCount = vowSteps->Extractions.size();
-	results = new float[predictorCount * 3];
-	softmaxResults = new float[predictorCount * 3];
+	extractionVectors.push_back(*vowSteps);
+	extractionVectors.push_back(*daiSteps);
+	extractionVectors.push_back(*bmwSteps);
 
-	for (size_t i = 0, index = 0; i < predictorCount * 3; i += 3, index++)
+	dataCount = vowSteps->Extractions.size();
+	outputSetsCount = dataCount * extractionVectors.size();
+	results = new float[outputSetsCount];
+	softmaxResults = new float[outputSetsCount];
+
+
+	for (size_t i = 0, index = 0; i < outputSetsCount; i += 3, index++)
 	{
-		predictors = &vowSteps->Extractions.at(index).Predictors.at(0);
-		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
-		results[i] = outputResults[0];
-
-		predictors = &daiSteps->Extractions.at(index).Predictors.at(0);
-		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
-		results[i + 1] = outputResults[0];
-
-		predictors = &bmwSteps->Extractions.at(index).Predictors.at(0);
-		network.CalculateSigmoid(predictors, hiddenResults, outputResults);
-		results[i + 2] = outputResults[0];
+		for (size_t n = 0; n < extractionVectors.size(); n++)
+		{
+			predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
+			network.CalculateSigmoid(predictors, hiddenResults, outputResults);
+			results[i + n] = outputResults[0];
+		}
 	}
 
-	softmax(softmaxResults, results, 3, predictorCount);
+	softmax(softmaxResults, results, extractionVectors.size(), dataCount);
 
+	Depot test(extractionVectors.size());
 
-
+	test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
 }
 
 

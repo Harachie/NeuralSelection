@@ -60,14 +60,11 @@ struct StockDataExtractionVector
 struct StockDataVector
 {
 	string Description;
-	vector<StockData> *Data;
+	vector<StockData> Data;
 
-	StockDataVector()
-	{
-		this->Data = new vector<StockData>();
-	}
+	StockDataVector()	{	}
 
-	StockDataVector(vector<StockData> *v)
+	StockDataVector(vector<StockData> v)
 	{
 		this->Data = v;
 
@@ -77,9 +74,9 @@ struct StockDataVector
 	{
 		unordered_set<uint32_t> *r = new unordered_set<uint32_t>();
 
-		for (size_t i = 0; i < this->Data->size(); i++)
+		for (size_t i = 0; i < this->Data.size(); i++)
 		{
-			r->insert(this->Data->at(i).Date);
+			r->insert(this->Data.at(i).Date);
 		}
 
 		return r;
@@ -91,11 +88,11 @@ struct StockDataVector
 
 		r->Description = this->Description;
 
-		for (size_t i = 0; i < this->Data->size(); i++)
+		for (size_t i = 0; i < this->Data.size(); i++)
 		{
-			if ((dates->count(this->Data->at(i).Date)) && (this->Data->at(i).Date >= minDate))
+			if ((dates->count(this->Data.at(i).Date)) && (this->Data.at(i).Date >= minDate))
 			{
-				r->Data->push_back(this->Data->at(i));
+				r->Data.push_back(this->Data.at(i));
 			}
 		}
 
@@ -108,11 +105,11 @@ struct StockDataVector
 
 		r->Description = this->Description;
 
-		for (size_t i = 0; i < this->Data->size(); i++)
+		for (size_t i = 0; i < this->Data.size(); i++)
 		{
-			if (dates->count(this->Data->at(i).Date))
+			if (dates->count(this->Data.at(i).Date))
 			{
-				r->Data->push_back(this->Data->at(i));
+				r->Data.push_back(this->Data.at(i));
 			}
 		}
 
@@ -125,11 +122,11 @@ struct StockDataVector
 
 		r->Description = this->Description;
 
-		for (size_t i = 0; i < this->Data->size(); i++)
+		for (size_t i = 0; i < this->Data.size(); i++)
 		{
-			if (this->Data->at(i).Date >= date)
+			if (this->Data.at(i).Date >= date)
 			{
-				r->Data->push_back(this->Data->at(i));
+				r->Data.push_back(this->Data.at(i));
 			}
 		}
 
@@ -145,17 +142,17 @@ struct StockDataVector
 		float percent = 0.0f;
 
 		startIndex = stepSize * count + 1;
-		r->Extractions.reserve(this->Data->size() - startIndex);
+		r->Extractions.reserve(this->Data.size() - startIndex);
 
-		for (size_t i = startIndex; i < this->Data->size(); i++)
+		for (size_t i = startIndex; i < this->Data.size(); i++)
 		{
-			e = new StockDataExtraction(this->Data->at(i));			
+			e = new StockDataExtraction(this->Data.at(i));			
 			e->UsedStockData.reserve(count + 1);
 			e->Predictors.reserve(count + 1);
 
 			for (size_t stepIndex = i - startIndex; stepIndex < i; stepIndex += stepSize)
 			{
-				e->UsedStockData.push_back(this->Data[0][stepIndex]);
+				e->UsedStockData.push_back(this->Data.at(stepIndex));
 			}
 
 			currentBar = &e->UsedStockData.at(count);
@@ -170,13 +167,6 @@ struct StockDataVector
 		}
 
 		return r;
-	}
-
-	~StockDataVector()
-	{
-		delete this->Data;
-
-		this->Data = NULL;
 	}
 };
 
@@ -305,4 +295,65 @@ struct SimpleNeuralNetwork
 			outputResults[outputNeuron] = sigmoid(result);
 		}
 	}
+};
+
+struct Depot
+{
+	size_t StockCount;
+	float *StocksInPossesion;
+	float *StocksInvested;
+	float *StocksValues;
+	float InvestedMoney;
+	float CurrentInvestmentValue;
+
+	Depot(size_t stockCount)
+	{
+		this->StockCount = stockCount;
+		this->StocksInPossesion = new float[stockCount];
+		this->StocksInvested = new float[stockCount];
+		this->StocksValues = new float[stockCount];
+
+		for (size_t i = 0; i < stockCount; i++)
+		{
+			this->StocksInPossesion[i] = 0.0f;
+			this->StocksInvested[i] = 0.0f;
+			this->StocksValues[i] = 0.0f;
+		}
+	}
+
+	void BuyEveryBar(size_t dataCount, float *softmaxResults, const vector<StockDataExtractionVector> &extractionVectors, float moneyPerBar)
+	{
+		float investableMoney, buyPrice;
+
+		this->InvestedMoney = 0.0f;
+		this->CurrentInvestmentValue = 0.0f;
+
+		for (size_t i = 0; i < this->StockCount; i++)
+		{
+			this->StocksInPossesion[i] = 0.0f;
+			this->StocksInvested[i] = 0.0f;
+			this->StocksValues[i] = 0.0f;
+		}
+
+		for (size_t i = 0, index = 0; i < dataCount * this->StockCount; i += this->StockCount, index++)
+		{
+			for (size_t n = 0; n < this->StockCount; n++)
+			{
+				investableMoney = moneyPerBar * softmaxResults[i + n];
+				buyPrice = extractionVectors.at(n).Extractions.at(index).BuyBar.Open;
+				this->StocksInPossesion[n] += (investableMoney / buyPrice);
+				this->StocksInvested[n] += investableMoney;
+				this->InvestedMoney += investableMoney;
+			}
+		}
+		
+		for (size_t n = 0; n < this->StockCount; n++)
+		{
+			this->StocksValues[n] = this->StocksInPossesion[n] * extractionVectors.at(n).Extractions.at(dataCount - 1).BuyBar.Close;
+			this->CurrentInvestmentValue += this->StocksValues[n];
+		}
+
+	}
+
+
 };

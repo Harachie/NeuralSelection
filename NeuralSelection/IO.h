@@ -59,7 +59,7 @@ static StockDataVector* ReadFile(const char *path)
 
 			if (kpo > 0)
 			{
-				r->Data->push_back(StockData(sd->Date, sd->Open, sd->High, sd->Low, sd->Close, sd->Volume));
+				r->Data.push_back(StockData(sd->Date, sd->Open, sd->High, sd->Low, sd->Close, sd->Volume));
 			}
 		}
 
