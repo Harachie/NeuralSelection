@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <stdio.h>
 #include <iostream>
 #include <vector>
 #include <assert.h>
@@ -176,31 +177,46 @@ unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 
 void Cars(string dataDirectory)
 {
+	size_t networkCount = 40;
 	size_t predictorsCount = 2;
 	size_t stepSize = 65;
-	uint32_t startDate = 20100101;
+	uint32_t startDate = 20000101;
 
 	vector<StockDataVector> dataVectors;
 	vector<StockDataExtractionVector> extractionVectors;
+	vector<SimpleNeuralNetwork> networks;
+
+
+
+	for (size_t i = 0; i < networkCount; i++)
+	{
+		networks.push_back(SimpleNeuralNetwork(predictorsCount, 5, 1));
+	}
 
 	StockDataVector *vow, *dai, *bmw;
 	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered;
 	StockDataExtractionVector *vowSteps, *daiSteps, *bmwSteps;
 	unordered_set<uint32_t> *validDates;
-	SimpleNeuralNetwork network(predictorsCount, 5, 1);
+
 	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
 	float *results, *softmaxResults;
-	size_t dataCount, index, outputSetsCount;
+	size_t dataCount, index, outputSetsCount, totalWeightsCount;
+	uint64_t *randomIndex = new uint64_t[1024];
+	float *randomCrs, *adjustedWeights;
+	float bestFitness = 0.0f;
 	Xor1024 xor;
 
 	initializeXor1024(xor);
-	hiddenResults = network.CreateHiddenResultSet();
-	outputResults = network.CreateOutputResultSet();
-	randoms = new float[network.GetTotalWeightsCount()];
-	generateRandoms(xor, randoms, network.GetTotalWeightsCount(), -5.0f, 5.0f);
-	network.SetNetworkWeights(randoms);
 
+
+	hiddenResults = networks.at(0).CreateHiddenResultSet();
+	outputResults = networks.at(0).CreateOutputResultSet();
+	totalWeightsCount = networks.at(0).GetTotalWeightsCount();
+	randoms = new float[totalWeightsCount];
+	randomCrs = new float[totalWeightsCount];
+	adjustedWeights = new float[totalWeightsCount];
 	validDates = new unordered_set<uint32_t>();
+
 	vow = ReadStockFile(dataDirectory + string("vow3.de.txt"));
 	dai = ReadStockFile(dataDirectory + string("dai.de.txt"));
 	bmw = ReadStockFile(dataDirectory + string("bmw.de.txt"));
@@ -228,22 +244,112 @@ void Cars(string dataDirectory)
 	results = new float[outputSetsCount];
 	softmaxResults = new float[outputSetsCount];
 
+	Depot test(extractionVectors.size());
+	SimpleNeuralNetwork *currentNetwork;
+	SimpleNeuralNetwork testNetwork(predictorsCount, 5, 1);
+	uint64_t aIndex, bIndex, cIndex;
 
-	for (size_t i = 0, index = 0; i < outputSetsCount; i += 3, index++)
+	for (size_t i = 0; i < networkCount; i++)
 	{
-		for (size_t n = 0; n < extractionVectors.size(); n++)
+		generateRandoms(xor, randoms, totalWeightsCount, -5.0f, 5.0f);
+		networks.at(i).SetNetworkWeights(randoms);
+	}
+
+
+
+	for (size_t networkIndex = 0; networkIndex < networkCount; networkIndex++)
+	{
+		currentNetwork = &networks.at(networkIndex);
+
+		for (size_t i = 0, index = 0; i < outputSetsCount; i += 3, index++)
 		{
-			predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
-			network.CalculateSigmoid(predictors, hiddenResults, outputResults);
-			results[i + n] = outputResults[0];
+			for (size_t n = 0; n < extractionVectors.size(); n++)
+			{
+				predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
+				currentNetwork->CalculateSigmoid(predictors, hiddenResults, outputResults);
+				results[i + n] = outputResults[0];
+			}
+		}
+
+		softmax(softmaxResults, results, extractionVectors.size(), dataCount);
+		test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
+		currentNetwork->CurrentFitness = test.CurrentInvestmentValue;
+
+		if (currentNetwork->CurrentFitness > bestFitness)
+		{
+			bestFitness = currentNetwork->CurrentFitness;
+			printf("new best: %f\n", bestFitness);
 		}
 	}
 
-	softmax(softmaxResults, results, extractionVectors.size(), dataCount);
+	uint64_t round = 0;
 
-	Depot test(extractionVectors.size());
+	do
+	{
+		round++;
 
-	test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
+		for (size_t networkIndex = 0; networkIndex < networkCount; networkIndex++)
+		{
+			generateRandoms(xor, randomIndex, 1024, networkCount);
+			generateRandoms(xor, randomCrs, totalWeightsCount);
+
+			for (size_t i = 0; i < 1021; i++)
+			{
+				if ((randomIndex[i] != networkIndex) && (randomIndex[i + 1] != networkIndex) && (randomIndex[i + 2] != networkIndex))
+				{
+					if ((randomIndex[i] != randomIndex[i + 1]) && (randomIndex[i] != randomIndex[i + 2]) && (randomIndex[i + 1] != randomIndex[i + 2]))
+					{
+						aIndex = randomIndex[i];
+						bIndex = randomIndex[i + 1];
+						cIndex = randomIndex[i + 2];
+
+						break;
+					}
+				}
+			}
+
+			for (size_t i = 0; i < totalWeightsCount; i++)
+			{
+				if (randomCrs[i] < 0.9f)
+				{
+					adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8 * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]);
+				}
+				else
+				{
+					adjustedWeights[i] = networks.at(networkIndex).Weights[i];
+				}
+			}
+
+			testNetwork.SetNetworkWeights(adjustedWeights);
+
+			for (size_t i = 0, index = 0; i < outputSetsCount; i += 3, index++)
+			{
+				for (size_t n = 0; n < extractionVectors.size(); n++)
+				{
+					predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
+					testNetwork.CalculateSigmoid(predictors, hiddenResults, outputResults);
+					results[i + n] = outputResults[0];
+				}
+			}
+
+			softmax(softmaxResults, results, extractionVectors.size(), dataCount);
+			test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
+
+			if (test.CurrentInvestmentValue > networks.at(networkIndex).CurrentFitness)
+			{
+				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights);
+
+				if (test.CurrentInvestmentValue > bestFitness)
+				{
+					bestFitness = test.CurrentInvestmentValue;
+					printf("new best: %f at %u \n", bestFitness, round);
+				}
+			}
+		}
+
+	} while (true);
+
+
 }
 
 

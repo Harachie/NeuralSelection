@@ -177,6 +177,8 @@ struct SimpleNeuralNetwork
 	float *HiddenToOutputWeights;
 	float *HiddenBiasWeights;
 	float *OutputBiasWeights;
+	float *Weights;
+	float CurrentFitness;
 
 	SimpleNeuralNetwork(size_t predictors, size_t hiddenUnits, size_t outputUnits)
 	{
@@ -187,6 +189,7 @@ struct SimpleNeuralNetwork
 		this->HiddenToOutputWeights = new float[hiddenUnits * outputUnits];
 		this->HiddenBiasWeights = new float[hiddenUnits];
 		this->OutputBiasWeights = new float[outputUnits];
+		this->Weights = new float[this->Predictors * this->HiddenUnits + this->HiddenUnits * this->OutputUnits + this->HiddenUnits + this->OutputUnits];
 	}
 
 	size_t GetTotalWeightsCount()
@@ -199,6 +202,7 @@ struct SimpleNeuralNetwork
 		size_t index = 0;
 		size_t max;
 
+		memcpy(this->Weights, weights, sizeof(float) * this->GetTotalWeightsCount());
 		max = this->Predictors * this->HiddenUnits;
 
 		for (size_t i = 0; i < max; i++)
@@ -352,8 +356,6 @@ struct Depot
 			this->StocksValues[n] = this->StocksInPossesion[n] * extractionVectors.at(n).Extractions.at(dataCount - 1).BuyBar.Close;
 			this->CurrentInvestmentValue += this->StocksValues[n];
 		}
-
 	}
-
 
 };

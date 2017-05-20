@@ -42,6 +42,23 @@ static void generateRandoms(Xor1024 &xor, uint64_t *results, uint64_t count)
 	}
 }
 
+static void generateRandoms(Xor1024 &xor, uint64_t *results, uint64_t count, uint64_t max)
+{
+	uint64_t s0, s1;
+
+	for (size_t i = 0; i < count; ++i)
+	{
+		s0 = xor.s1024[xor.p];
+		s1 = xor.s1024[xor.p = (xor.p + 1) & 15];
+
+		s1 ^= s1 << 31; // a
+		s1 ^= s1 >> 11; // b
+		s0 ^= s0 >> 30; // c
+
+		results[i] = ((xor.s1024[xor.p] = s0 ^ s1) * 1181783497276652981LL) & (max - 1);
+	}
+}
+
 static void generateRandoms(Xor1024 &xor, float *results, size_t count) //yay union FTW, kein cast nötig :)
 {
 	uint64_t s0, s1;
