@@ -172,7 +172,7 @@ struct StockDataVector
 
 struct SimpleNeuralNetwork
 {
-	size_t Predictors, HiddenUnits, OutputUnits;
+	size_t Predictors, HiddenUnits, OutputUnits, TotalWeightsCount;
 	float *InputToHiddenWeights;
 	float *HiddenToOutputWeights;
 	float *HiddenBiasWeights;
@@ -189,12 +189,8 @@ struct SimpleNeuralNetwork
 		this->HiddenToOutputWeights = new float[hiddenUnits * outputUnits];
 		this->HiddenBiasWeights = new float[hiddenUnits];
 		this->OutputBiasWeights = new float[outputUnits];
-		this->Weights = new float[this->Predictors * this->HiddenUnits + this->HiddenUnits * this->OutputUnits + this->HiddenUnits + this->OutputUnits];
-	}
-
-	size_t GetTotalWeightsCount()
-	{
-		return this->Predictors * this->HiddenUnits + this->HiddenUnits * this->OutputUnits + this->HiddenUnits + this->OutputUnits;
+		this->TotalWeightsCount = this->Predictors * this->HiddenUnits + this->HiddenUnits * this->OutputUnits + this->HiddenUnits + this->OutputUnits;
+		this->Weights = new float[this->TotalWeightsCount];
 	}
 
 	void SetNetworkWeights(const float *weights)
@@ -202,7 +198,7 @@ struct SimpleNeuralNetwork
 		size_t index = 0;
 		size_t max;
 
-		memcpy(this->Weights, weights, sizeof(float) * this->GetTotalWeightsCount());
+		memcpy(this->Weights, weights, sizeof(float) * this->TotalWeightsCount);
 		max = this->Predictors * this->HiddenUnits;
 
 		for (size_t i = 0; i < max; i++)
@@ -268,7 +264,7 @@ struct SimpleNeuralNetwork
 		}
 	}
 
-	void CalculateSigmoid(float *inputs, float *hiddenResults, float *outputResults)
+	void CalculateSigmoidRawOutput(float *inputs, float *hiddenResults, float *outputResults)
 	{
 		float result;
 		size_t startIndex;
@@ -296,9 +292,42 @@ struct SimpleNeuralNetwork
 				result += hiddenResults[i] * this->HiddenToOutputWeights[startIndex + i];
 			}
 
+			outputResults[outputNeuron] = result;
+		}
+	}
+
+	void CalculateSigmoid(float *inputs, float *hiddenResults, float *outputResults)
+	{
+		float result;
+		size_t startIndex;
+
+		for (size_t hiddenNeuron = 0; hiddenNeuron < this->HiddenUnits; hiddenNeuron++)
+		{
+			result = this->HiddenBiasWeights[hiddenNeuron];
+			startIndex = hiddenNeuron * this->Predictors;
+
+			for (size_t i = 0; i < this->Predictors; i++)
+			{
+				result += inputs[i] * this->InputToHiddenWeights[startIndex + i];
+			}
+
+			hiddenResults[hiddenNeuron] = sigmoid(result);
+		}
+
+		for (size_t outputNeuron = 0; outputNeuron < this->OutputUnits; outputNeuron++)
+		{
+			result = this->OutputBiasWeights[outputNeuron];
+			startIndex = outputNeuron * this->HiddenUnits;
+
+			for (size_t i = 0; i < this->HiddenUnits; i++)
+			{
+				result += hiddenResults[i] * this->HiddenToOutputWeights[startIndex + i];
+			}
+			
 			outputResults[outputNeuron] = sigmoid(result);
 		}
 	}
+
 };
 
 struct Depot

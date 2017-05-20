@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <inttypes.h>
 #include <stdio.h>
 #include <iostream>
 #include <vector>
@@ -120,11 +121,11 @@ void TestNetwork2()
 	delete[] outputResults;
 }
 
-void TestNetwork3()
-{
-	SimpleNeuralNetwork network(13, 3, 1);
-	float *inputs, *hiddenResults, *outputResults;
-}
+//void TestNetwork3()
+//{
+//	SimpleNeuralNetwork network(13, 3, 1);
+//	float *inputs, *hiddenResults, *outputResults;
+//}
 
 unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 {
@@ -179,7 +180,7 @@ void Cars(string dataDirectory)
 {
 	size_t networkCount = 40;
 	size_t predictorsCount = 13;
-	size_t hiddenCount = 3;
+	size_t hiddenCount = 5;
 	size_t stepSize = 10;
 	uint32_t startDate = 20000101;
 
@@ -214,7 +215,7 @@ void Cars(string dataDirectory)
 
 	hiddenResults = networks.at(0).CreateHiddenResultSet();
 	outputResults = networks.at(0).CreateOutputResultSet();
-	totalWeightsCount = networks.at(0).GetTotalWeightsCount();
+	totalWeightsCount = networks.at(0).TotalWeightsCount;
 	randoms = new float[totalWeightsCount];
 	randomCrs = new float[totalWeightsCount];
 	adjustedWeights = new float[totalWeightsCount];
@@ -269,7 +270,7 @@ void Cars(string dataDirectory)
 			for (size_t n = 0; n < extractionVectors.size(); n++)
 			{
 				predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
-				currentNetwork->CalculateSigmoid(predictors, hiddenResults, outputResults);
+				currentNetwork->CalculateSigmoidRawOutput(predictors, hiddenResults, outputResults);
 				results[i + n] = outputResults[0];
 			}
 		}
@@ -315,9 +316,9 @@ void Cars(string dataDirectory)
 
 			for (size_t i = 0; i < totalWeightsCount; i++)
 			{
-				if (randomCrs[i] < 0.2f)
+				if (randomCrs[i] < 0.9f)
 				{
-					adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8 * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]);
+					adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8f * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]);
 				}
 				else
 				{
@@ -332,7 +333,7 @@ void Cars(string dataDirectory)
 				for (size_t n = 0; n < extractionVectors.size(); n++)
 				{
 					predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
-					testNetwork.CalculateSigmoid(predictors, hiddenResults, outputResults);
+					testNetwork.CalculateSigmoidRawOutput(predictors, hiddenResults, outputResults);
 					results[i + n] = outputResults[0];
 				}
 			}
@@ -345,15 +346,11 @@ void Cars(string dataDirectory)
 				networks.at(networkIndex).CurrentFitness = test.CurrentInvestmentValue;
 				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights);
 
-				//if (results[0] != results[1] != results[2])
-			//	{
-
 				if (test.CurrentInvestmentValue > bestFitness)
 				{
 					bestFitness = test.CurrentInvestmentValue;
-					printf("new best: %f (%.2f) at %u \n", bestFitness, ((bestFitness / compareEvenly) - 1.0f) * 100.0f, round);
+					printf("new best: %f (%.2f) at %" PRIu64 " \n", bestFitness, ((bestFitness / compareEvenly) - 1.0f) * 100.0f, round);
 				}
-				//}
 			}
 		}
 
