@@ -178,19 +178,21 @@ unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 void Cars(string dataDirectory)
 {
 	size_t networkCount = 40;
-	size_t predictorsCount = 2;
-	size_t stepSize = 65;
+	size_t predictorsCount = 13;
+	size_t hiddenCount = 3;
+	size_t stepSize = 10;
 	uint32_t startDate = 20000101;
 
 	vector<StockDataVector> dataVectors;
 	vector<StockDataExtractionVector> extractionVectors;
 	vector<SimpleNeuralNetwork> networks;
 
+	/* die outputs durch ein andres netzwerk jagen und N outputs berechnen (also 3 rein N=3 outputs raus), darauf softmax*/
 
 
 	for (size_t i = 0; i < networkCount; i++)
 	{
-		networks.push_back(SimpleNeuralNetwork(predictorsCount, 5, 1));
+		networks.push_back(SimpleNeuralNetwork(predictorsCount, hiddenCount, 1));
 	}
 
 	StockDataVector *vow, *dai, *bmw;
@@ -204,6 +206,7 @@ void Cars(string dataDirectory)
 	uint64_t *randomIndex = new uint64_t[1024];
 	float *randomCrs, *adjustedWeights;
 	float bestFitness = 0.0f;
+	float compareEvenly;
 	Xor1024 xor;
 
 	initializeXor1024(xor);
@@ -246,7 +249,7 @@ void Cars(string dataDirectory)
 
 	Depot test(extractionVectors.size());
 	SimpleNeuralNetwork *currentNetwork;
-	SimpleNeuralNetwork testNetwork(predictorsCount, 5, 1);
+	SimpleNeuralNetwork testNetwork(predictorsCount, hiddenCount, 1);
 	uint64_t aIndex, bIndex, cIndex;
 
 	for (size_t i = 0; i < networkCount; i++)
@@ -282,6 +285,8 @@ void Cars(string dataDirectory)
 		}
 	}
 
+	test.BuyEveryBarEvenly(dataCount, extractionVectors, 100);
+	compareEvenly = test.CurrentInvestmentValue;
 	uint64_t round = 0;
 
 	do
@@ -310,7 +315,7 @@ void Cars(string dataDirectory)
 
 			for (size_t i = 0; i < totalWeightsCount; i++)
 			{
-				if (randomCrs[i] < 0.9f)
+				if (randomCrs[i] < 0.2f)
 				{
 					adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8 * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]);
 				}
@@ -337,13 +342,18 @@ void Cars(string dataDirectory)
 
 			if (test.CurrentInvestmentValue > networks.at(networkIndex).CurrentFitness)
 			{
+				networks.at(networkIndex).CurrentFitness = test.CurrentInvestmentValue;
 				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights);
+
+				//if (results[0] != results[1] != results[2])
+			//	{
 
 				if (test.CurrentInvestmentValue > bestFitness)
 				{
 					bestFitness = test.CurrentInvestmentValue;
-					printf("new best: %f at %u \n", bestFitness, round);
+					printf("new best: %f (%.2f) at %u \n", bestFitness, ((bestFitness / compareEvenly) - 1.0f) * 100.0f, round);
 				}
+				//}
 			}
 		}
 

@@ -159,7 +159,7 @@ struct StockDataVector
 
 			for (size_t p = 0; p < count; p++)
 			{
-				percent = currentBar->Close / e->UsedStockData.at(p).Close;
+				percent = (currentBar->Close / e->UsedStockData.at(p).Close) - 1.0f;
 				e->Predictors.push_back(percent);
 			}
 
@@ -351,6 +351,39 @@ struct Depot
 			}
 		}
 		
+		for (size_t n = 0; n < this->StockCount; n++)
+		{
+			this->StocksValues[n] = this->StocksInPossesion[n] * extractionVectors.at(n).Extractions.at(dataCount - 1).BuyBar.Close;
+			this->CurrentInvestmentValue += this->StocksValues[n];
+		}
+	}
+
+	void BuyEveryBarEvenly(size_t dataCount, const vector<StockDataExtractionVector> &extractionVectors, float moneyPerBar)
+	{
+		float investableMoney, buyPrice;
+
+		this->InvestedMoney = 0.0f;
+		this->CurrentInvestmentValue = 0.0f;
+
+		for (size_t i = 0; i < this->StockCount; i++)
+		{
+			this->StocksInPossesion[i] = 0.0f;
+			this->StocksInvested[i] = 0.0f;
+			this->StocksValues[i] = 0.0f;
+		}
+
+		for (size_t i = 0, index = 0; i < dataCount * this->StockCount; i += this->StockCount, index++)
+		{
+			for (size_t n = 0; n < this->StockCount; n++)
+			{
+				investableMoney = moneyPerBar / this->StockCount;
+				buyPrice = extractionVectors.at(n).Extractions.at(index).BuyBar.Open;
+				this->StocksInPossesion[n] += (investableMoney / buyPrice);
+				this->StocksInvested[n] += investableMoney;
+				this->InvestedMoney += investableMoney;
+			}
+		}
+
 		for (size_t n = 0; n < this->StockCount; n++)
 		{
 			this->StocksValues[n] = this->StocksInPossesion[n] * extractionVectors.at(n).Extractions.at(dataCount - 1).BuyBar.Close;
