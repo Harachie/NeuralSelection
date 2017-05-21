@@ -292,7 +292,7 @@ struct SimpleNeuralNetwork
 				result += hiddenResults[i] * this->HiddenToOutputWeights[startIndex + i];
 			}
 
-			outputResults[outputNeuron] = result;
+			outputResults[outputNeuron] = result * 11.0f;
 		}
 	}
 
