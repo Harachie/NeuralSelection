@@ -660,7 +660,7 @@ void Stocks(string dataDirectory)
 
 	for (size_t i = 0; i < networkCount; i++)
 	{
-		networks.push_back(SimpleNeuralNetwork(predictorsCount, hiddenCount, 1));
+		networks.push_back(SimpleNeuralNetwork(predictorsCount, hiddenCount, 1)); //Netzwerke erzeugen
 	}
 
 	StockDataVector *temp;
@@ -668,49 +668,48 @@ void Stocks(string dataDirectory)
 	StockDataExtractionVector *tempSteps;
 
 
-	initializeXor1024(xor);
+	initializeXor1024(xor); //random Generator erzeugen
 
 
 	hiddenResults = networks.at(0).CreateHiddenResultSet();
 	outputResults = networks.at(0).CreateOutputResultSet();
 	totalWeightsCount = networks.at(0).TotalWeightsCount;
 	randoms = new float[totalWeightsCount];
-	randomCrs = new float[totalWeightsCount];
+	randomCrs = new float[totalWeightsCount]; //RandomWerte für die crossover rate
 	adjustedWeights = new float[totalWeightsCount];
 	validDates = new unordered_set<uint32_t>();
 
-	for (size_t i = 0; i < stockDataFiles.size(); i++)
+	for (size_t i = 0; i < stockDataFiles.size(); i++) //daten einlesen
 	{
 		temp = ReadStockFile(dataDirectory + stockDataFiles.at(i));
 		dataVectors.push_back(*temp);
 	}
 
-	validDates = GetValidDates(dataVectors);
+	validDates = GetValidDates(dataVectors); //diese Datumswerte sind in allen Dateien vorhanden
 
 	for (size_t i = 0; i < stockDataFiles.size(); i++)
 	{
 		tempFiltered = dataVectors.at(i).FilterByDate(validDates, startDate);
 		tempSteps = tempFiltered->ExtractSteps(stepSize, predictorsCount);
-		extractionVectors.push_back(*tempSteps);
+		extractionVectors.push_back(*tempSteps); //das sind die Trainingssets mit den prozentualen Abständen als Predictoren
 	}
 
-	dataCount = tempSteps->Extractions.size();
+	dataCount = tempSteps->Extractions.size(); //soviele Trainingssets sind vorhanden
 	outputSetsCount = dataCount * extractionVectors.size();
 	results = new float[outputSetsCount];
 	softmaxResults = new float[outputSetsCount];
 
-	Depot test(extractionVectors.size());
+	Depot test(extractionVectors.size()); //Testdepot für die Fitnessberechnung
 	SimpleNeuralNetwork *currentNetwork;
-	SimpleNeuralNetwork testNetwork(predictorsCount, hiddenCount, 1);
+	SimpleNeuralNetwork testNetwork(predictorsCount, hiddenCount, 1); //Testnetzwerk für die Fitnessberechnung
 
 	for (size_t i = 0; i < networkCount; i++)
 	{
 		generateRandoms(xor, randoms, totalWeightsCount, -5.0f, 5.0f);
 		networks.at(i).SetNetworkWeights(randoms);
 	}
-
-
-
+	
+	//die Initialfitness berechnen
 	for (size_t networkIndex = 0; networkIndex < networkCount; networkIndex++)
 	{
 		currentNetwork = &networks.at(networkIndex);
@@ -736,6 +735,7 @@ void Stocks(string dataDirectory)
 		}
 	}
 
+	//den Vergleichswert berechnen indem alle gleichmäßig gekauft werden
 	test.BuyEveryBarEvenly(dataCount, extractionVectors, 100);
 	compareEvenly = test.CurrentInvestmentValue;
 	uint64_t round = 0;
@@ -751,10 +751,10 @@ void Stocks(string dataDirectory)
 			AdjustWeights(networks, xor, randomIndex, randomCrs, adjustedWeights, networkCount, totalWeightsCount, networkIndex);
 			CalculateFitness(testNetwork, adjustedWeights, predictors, hiddenResults, outputResults, results, softmaxResults, test, extractionVectors, dataCount, outputSetsCount);
 
-			if (test.CurrentInvestmentValue > networks.at(networkIndex).CurrentFitness)
+			if (test.CurrentInvestmentValue > networks.at(networkIndex).CurrentFitness) //ist die Fitness gestiegen?
 			{
-				networks.at(networkIndex).CurrentFitness = test.CurrentInvestmentValue;
-				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights);
+				networks.at(networkIndex).CurrentFitness = test.CurrentInvestmentValue; //anpassen
+				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights); //neue Gewichte setzen, welche zu einem besseren Ergebnis geführt haben
 				increasedFitness++;
 
 				if (test.CurrentInvestmentValue > bestFitness)
@@ -765,7 +765,7 @@ void Stocks(string dataDirectory)
 			}
 		}
 
-	printf("increased: %llu\n", increasedFitness);
+	//printf("increased: %llu\n", increasedFitness);
 
 	} while (true);
 
