@@ -365,7 +365,7 @@ void CarsWithTest(string dataDirectory)
 	size_t networkCount = 40;
 	size_t predictorsCount = 4;
 	size_t hiddenCount = 3;
-	size_t stepSize = 65;
+	size_t stepSize = 4;
 	uint32_t startDate = 19900101;
 
 	vector<StockDataVector> dataVectors;
@@ -583,7 +583,7 @@ void CarsWithTest(string dataDirectory)
 }
 
 
-void Stocks6(string dataDirectory)
+void Stocks(string dataDirectory)
 {
 	size_t networkCount = 40;
 	size_t predictorsCount = 6;
@@ -595,6 +595,17 @@ void Stocks6(string dataDirectory)
 	vector<StockDataExtractionVector> extractionVectors;
 	vector<StockDataExtractionVector> extractionVectorsTest;
 	vector<SimpleNeuralNetwork> networks;
+	unordered_set<uint32_t> *validDates;
+	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
+	float *results, *softmaxResults;
+	size_t dataCount, index, outputSetsCount, totalWeightsCount;
+	uint64_t *randomIndex = new uint64_t[1024];
+	float *randomCrs, *adjustedWeights;
+	float bestFitness = 0.0f;
+	float compareEvenly;
+	Xor1024 xor;	
+	vector<string> stockDataFiles = { "ads.de.txt", "alv.de.txt", "bas.de.txt", "bayn.de.txt", "bei.de.txt", "bmw.de.txt", "cbk.de.txt", "dai.de.txt", "dbk.de.txt", "dpw.de.txt", "dte.de.txt", "eoan.de.txt", "fme.de.txt", "fre.de.txt", "hei.de.txt", "hen3.de.txt", "ifx.de.txt", "lha.de.txt", "lin.de.txt", "mrk.de.txt", "muv2.de.txt", "psm.de.txt", "rwe.de.txt", "sap.de.txt", "sie.de.txt", "tka.de.txt", "vow3.de.txt", "_con.de.txt" };
+
 
 	/* die outputs durch ein andres netzwerk jagen und N outputs berechnen (also 3 rein N=3 outputs raus), darauf softmax*/
 
@@ -604,19 +615,10 @@ void Stocks6(string dataDirectory)
 		networks.push_back(SimpleNeuralNetwork(predictorsCount, hiddenCount, 1));
 	}
 
-	StockDataVector *vow, *dai, *bmw, *alv, *sie, *bayn;
-	StockDataVector *vowFiltered, *daiFiltered, *bmwFiltered, *alvF, *sieF, *baynF;
-	StockDataExtractionVector *vowSteps, *daiSteps, *bmwSteps, *alvS, *sieS, *baynS;
-	unordered_set<uint32_t> *validDates;
+	StockDataVector *temp;
+	StockDataVector *tempFiltered;
+	StockDataExtractionVector *tempSteps;
 
-	float *inputs, *hiddenResults, *outputResults, *randoms, *predictors;
-	float *results, *softmaxResults;
-	size_t dataCount, index, outputSetsCount, totalWeightsCount;
-	uint64_t *randomIndex = new uint64_t[1024];
-	float *randomCrs, *adjustedWeights;
-	float bestFitness = 0.0f;
-	float compareEvenly;
-	Xor1024 xor;
 
 	initializeXor1024(xor);
 
@@ -629,48 +631,22 @@ void Stocks6(string dataDirectory)
 	adjustedWeights = new float[totalWeightsCount];
 	validDates = new unordered_set<uint32_t>();
 
-	vow = ReadStockFile(dataDirectory + string("vow3.de.txt"));
-	dai = ReadStockFile(dataDirectory + string("dai.de.txt"));
-	bmw = ReadStockFile(dataDirectory + string("bmw.de.txt"));
-
-	alv = ReadStockFile(dataDirectory + string("alv.de.txt"));
-	sie = ReadStockFile(dataDirectory + string("sie.de.txt"));
-	bayn = ReadStockFile(dataDirectory + string("bayn.de.txt"));
-
-	dataVectors.push_back(*vow);
-	dataVectors.push_back(*dai);
-	dataVectors.push_back(*bmw);
-	dataVectors.push_back(*alv);
-	dataVectors.push_back(*sie);
-	dataVectors.push_back(*bayn);
+	for (size_t i = 0; i < stockDataFiles.size(); i++)
+	{
+		temp = ReadStockFile(dataDirectory + stockDataFiles.at(i));
+		dataVectors.push_back(*temp);
+	}
 
 	validDates = GetValidDates(dataVectors);
 
-	vowFiltered = vow->FilterByDate(validDates, startDate);
-	daiFiltered = dai->FilterByDate(validDates, startDate);
-	bmwFiltered = bmw->FilterByDate(validDates, startDate);
+	for (size_t i = 0; i < stockDataFiles.size(); i++)
+	{
+		tempFiltered = dataVectors.at(i).FilterByDate(validDates, startDate);
+		tempSteps = tempFiltered->ExtractSteps(stepSize, predictorsCount);
+		extractionVectors.push_back(*tempSteps);
+	}
 
-	alvF = alv->FilterByDate(validDates, startDate);
-	sieF = sie->FilterByDate(validDates, startDate);
-	baynF = bayn->FilterByDate(validDates, startDate);
-
-	vowSteps = vowFiltered->ExtractSteps(stepSize, predictorsCount);
-	daiSteps = daiFiltered->ExtractSteps(stepSize, predictorsCount);
-	bmwSteps = bmwFiltered->ExtractSteps(stepSize, predictorsCount);
-
-	alvS = alvF->ExtractSteps(stepSize, predictorsCount);
-	sieS = sieF->ExtractSteps(stepSize, predictorsCount);
-	baynS = baynF->ExtractSteps(stepSize, predictorsCount);
-
-	extractionVectors.push_back(*vowSteps);
-	extractionVectors.push_back(*daiSteps);
-	extractionVectors.push_back(*bmwSteps);
-
-	extractionVectors.push_back(*alvS);
-	extractionVectors.push_back(*sieS);
-	extractionVectors.push_back(*baynS);
-
-	dataCount = vowSteps->Extractions.size();
+	dataCount = tempSteps->Extractions.size();
 	outputSetsCount = dataCount * extractionVectors.size();
 	results = new float[outputSetsCount];
 	softmaxResults = new float[outputSetsCount];
@@ -716,10 +692,12 @@ void Stocks6(string dataDirectory)
 	test.BuyEveryBarEvenly(dataCount, extractionVectors, 100);
 	compareEvenly = test.CurrentInvestmentValue;
 	uint64_t round = 0;
+	uint64_t increasedFitness = 0;
 
 	do
 	{
 		round++;
+		increasedFitness = 0;
 
 		for (size_t networkIndex = 0; networkIndex < networkCount; networkIndex++)
 		{
@@ -772,6 +750,7 @@ void Stocks6(string dataDirectory)
 			{
 				networks.at(networkIndex).CurrentFitness = test.CurrentInvestmentValue;
 				networks.at(networkIndex).SetNetworkWeights(testNetwork.Weights);
+				increasedFitness++;
 
 				if (test.CurrentInvestmentValue > bestFitness)
 				{
@@ -782,6 +761,8 @@ void Stocks6(string dataDirectory)
 				}
 			}
 		}
+
+	printf("increased: %llu\n", increasedFitness);
 
 	} while (true);
 
@@ -797,7 +778,8 @@ int main(int argc, char* argv[]) {
 	TestSoftmax();
 	TestNetwork1();
 	TestNetwork2();
-	Stocks6(dataDirectory);
+	//Cars(dataDirectory);
+	Stocks(dataDirectory);
 
 	return 0;
 }
