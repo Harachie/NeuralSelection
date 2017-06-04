@@ -194,7 +194,7 @@ void AdjustWeights(vector<SimpleNeuralNetwork> &networks, Xor1024 &xor, uint64_t
 
 	for (size_t i = 0; i < totalWeightsCount; i++)
 	{
-		if (randomCrs[i] < 0.9f) //crossover rate = 90% => es wird  90%-iger Wahrscheinlichkeit das Gewicht für das i-te Gewicht angepasst
+		if (randomCrs[i] < 0.6f) //crossover rate = 90% => es wird  90%-iger Wahrscheinlichkeit das Gewicht für das i-te Gewicht angepasst
 		{
 			adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8f * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]); //differential evolution => Gewicht von 3 anderen Netzwerken benutzen
 		}
@@ -205,7 +205,7 @@ void AdjustWeights(vector<SimpleNeuralNetwork> &networks, Xor1024 &xor, uint64_t
 	}
 }
 
-float CalculateFitness(SimpleNeuralNetwork &testNetwork, float *adjustedWeights, float *predictors, float *hiddenResults, float *outputResults, float *results, 
+void CalculateFitness(SimpleNeuralNetwork &testNetwork, float *adjustedWeights, float *predictors, float *hiddenResults, float *outputResults, float *results, 
 	float *softmaxResults, Depot &test, vector<StockDataExtractionVector> &extractionVectors, 
 	size_t dataCount, size_t outputSetsCount)
 {
