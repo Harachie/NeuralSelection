@@ -121,12 +121,6 @@ void TestNetwork2()
 	delete[] outputResults;
 }
 
-//void TestNetwork3()
-//{
-//	SimpleNeuralNetwork network(13, 3, 1);
-//	float *inputs, *hiddenResults, *outputResults;
-//}
-
 unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 {
 	unordered_set<uint32_t>	*validDates = new unordered_set<uint32_t>();
@@ -174,6 +168,61 @@ unordered_set<uint32_t>* GetValidDates(vector<StockDataVector> &dataVectors)
 	}
 
 	return validDates;
+}
+
+void AdjustWeights(vector<SimpleNeuralNetwork> &networks, Xor1024 &xor, uint64_t *randomIndex, float *randomCrs, float *adjustedWeights, size_t networkCount, size_t totalWeightsCount, size_t networkIndex)
+{
+	uint64_t aIndex, bIndex, cIndex;
+
+	generateRandoms(xor, randomIndex, 1024, networkCount);
+	generateRandoms(xor, randomCrs, totalWeightsCount);
+
+	for (size_t i = 0; i < 1021; i++) //3 Netzwerke raussuchen, die nicht dem eigenen Netzwerk entsprechen
+	{
+		if ((randomIndex[i] != networkIndex) && (randomIndex[i + 1] != networkIndex) && (randomIndex[i + 2] != networkIndex))
+		{
+			if ((randomIndex[i] != randomIndex[i + 1]) && (randomIndex[i] != randomIndex[i + 2]) && (randomIndex[i + 1] != randomIndex[i + 2]))
+			{
+				aIndex = randomIndex[i];
+				bIndex = randomIndex[i + 1];
+				cIndex = randomIndex[i + 2];
+
+				break;
+			}
+		}
+	}
+
+	for (size_t i = 0; i < totalWeightsCount; i++)
+	{
+		if (randomCrs[i] < 0.9f) //crossover rate = 90% => es wird  90%-iger Wahrscheinlichkeit das Gewicht für das i-te Gewicht angepasst
+		{
+			adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8f * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]); //differential evolution => Gewicht von 3 anderen Netzwerken benutzen
+		}
+		else
+		{
+			adjustedWeights[i] = networks.at(networkIndex).Weights[i]; //gewicht bleibt wie es war
+		}
+	}
+}
+
+float CalculateFitness(SimpleNeuralNetwork &testNetwork, float *adjustedWeights, float *predictors, float *hiddenResults, float *outputResults, float *results, 
+	float *softmaxResults, Depot &test, vector<StockDataExtractionVector> &extractionVectors, 
+	size_t dataCount, size_t outputSetsCount)
+{
+	testNetwork.SetNetworkWeights(adjustedWeights);
+
+	for (size_t i = 0, index = 0; i < outputSetsCount; i += extractionVectors.size(), index++)
+	{
+		for (size_t n = 0; n < extractionVectors.size(); n++)
+		{
+			predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
+			testNetwork.CalculateSigmoidRawOutput(predictors, hiddenResults, outputResults);
+			results[i + n] = outputResults[0];
+		}
+	}
+
+	softmax(softmaxResults, results, extractionVectors.size(), dataCount);
+	test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
 }
 
 void Cars(string dataDirectory)
@@ -358,7 +407,6 @@ void Cars(string dataDirectory)
 
 
 }
-
 
 void CarsWithTest(string dataDirectory)
 {
@@ -654,7 +702,6 @@ void Stocks(string dataDirectory)
 	Depot test(extractionVectors.size());
 	SimpleNeuralNetwork *currentNetwork;
 	SimpleNeuralNetwork testNetwork(predictorsCount, hiddenCount, 1);
-	uint64_t aIndex, bIndex, cIndex;
 
 	for (size_t i = 0; i < networkCount; i++)
 	{
@@ -701,50 +748,8 @@ void Stocks(string dataDirectory)
 
 		for (size_t networkIndex = 0; networkIndex < networkCount; networkIndex++)
 		{
-			generateRandoms(xor, randomIndex, 1024, networkCount);
-			generateRandoms(xor, randomCrs, totalWeightsCount);
-
-			for (size_t i = 0; i < 1021; i++)
-			{
-				if ((randomIndex[i] != networkIndex) && (randomIndex[i + 1] != networkIndex) && (randomIndex[i + 2] != networkIndex))
-				{
-					if ((randomIndex[i] != randomIndex[i + 1]) && (randomIndex[i] != randomIndex[i + 2]) && (randomIndex[i + 1] != randomIndex[i + 2]))
-					{
-						aIndex = randomIndex[i];
-						bIndex = randomIndex[i + 1];
-						cIndex = randomIndex[i + 2];
-
-						break;
-					}
-				}
-			}
-
-			for (size_t i = 0; i < totalWeightsCount; i++)
-			{
-				if (randomCrs[i] < 0.9f)
-				{
-					adjustedWeights[i] = networks.at(aIndex).Weights[i] + 0.8f * (networks.at(bIndex).Weights[i] - networks.at(cIndex).Weights[i]);
-				}
-				else
-				{
-					adjustedWeights[i] = networks.at(networkIndex).Weights[i];
-				}
-			}
-
-			testNetwork.SetNetworkWeights(adjustedWeights);
-
-			for (size_t i = 0, index = 0; i < outputSetsCount; i += extractionVectors.size(), index++)
-			{
-				for (size_t n = 0; n < extractionVectors.size(); n++)
-				{
-					predictors = &extractionVectors.at(n).Extractions.at(index).Predictors.at(0);
-					testNetwork.CalculateSigmoidRawOutput(predictors, hiddenResults, outputResults);
-					results[i + n] = outputResults[0];
-				}
-			}
-
-			softmax(softmaxResults, results, extractionVectors.size(), dataCount);
-			test.BuyEveryBar(dataCount, softmaxResults, extractionVectors, 100);
+			AdjustWeights(networks, xor, randomIndex, randomCrs, adjustedWeights, networkCount, totalWeightsCount, networkIndex);
+			CalculateFitness(testNetwork, adjustedWeights, predictors, hiddenResults, outputResults, results, softmaxResults, test, extractionVectors, dataCount, outputSetsCount);
 
 			if (test.CurrentInvestmentValue > networks.at(networkIndex).CurrentFitness)
 			{
@@ -756,8 +761,6 @@ void Stocks(string dataDirectory)
 				{
 					bestFitness = test.CurrentInvestmentValue;
 					printf("new best: %f (%.2f) at %" PRIu64 "\n", bestFitness, ((bestFitness / compareEvenly) - 1.0f) * 100.0f, round);
-
-
 				}
 			}
 		}
@@ -771,7 +774,7 @@ void Stocks(string dataDirectory)
 
 int main(int argc, char* argv[]) {
 	string executablePath = argv[0];
-	string directory = executablePath.substr(0, executablePath.length() - 19); //-neuralselection.exe
+	string directory = executablePath.substr(0, executablePath.length() - 19); //-"neuralselection.exe".length()
 	string dataDirectory = directory + string("Data\\");
 	vector<string> stockDataFiles = { "ads.de.txt", "alv.de.txt", "bas.de.txt", "bayn.de.txt", "bei.de.txt", "bmw.de.txt", "cbk.de.txt", "dai.de.txt", "dbk.de.txt", "dpw.de.txt", "dte.de.txt", "eoan.de.txt", "fme.de.txt", "fre.de.txt", "hei.de.txt", "hen3.de.txt", "ifx.de.txt", "lha.de.txt", "lin.de.txt", "mrk.de.txt", "muv2.de.txt", "psm.de.txt", "rwe.de.txt", "sap.de.txt", "sie.de.txt", "tka.de.txt", "vow3.de.txt", "_con.de.txt" };
 
